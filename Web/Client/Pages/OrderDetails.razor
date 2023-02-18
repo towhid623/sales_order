@@ -1,0 +1,72 @@
+﻿@page "/orders/{Id:long}"
+@using Web.Shared
+@using Web.Shared.Dtos;
+@inject HttpClient Http
+
+<PageTitle>Order Details</PageTitle>
+
+<h1>Order Details</h1>
+
+@if (_orderGetByIdDto == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <p>Customer: @_orderGetByIdDto.Customer</p>
+    <p>State: @_orderGetByIdDto.State</p>
+    <table class="table table-bordered table-hover mt-5">
+        <thead>
+            <tr>
+                <th>Window Name</th>
+                <th>Quantity</th>
+                <th>Total Sub Elements</th>
+                <th>Sub Elements</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (_orderGetByIdDto.Windows != null)
+            {
+                foreach (var window in _orderGetByIdDto.Windows)
+                {
+                    <tr>
+                        <td>@window.Name</td>
+                        <td>@window.Quantity</td>
+                        <td>@window.NoOfSubElements</td>
+                        <td>
+                            @if (window.SubElements != null)
+                            {
+                                foreach (var element in window.SubElements)
+                                {
+                                    <p>
+                                        Type: @element.Type
+                                        <br>
+                                        Element: @element.Element
+                                        <br>
+                                        Height: @element.Height
+                                        <br>
+                                        Width: @element.Width
+                                        <br>
+                                    </p>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public long Id { get; set; }
+
+    private OrderGetByIdDto? _orderGetByIdDto;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Id = Id;
+        _orderGetByIdDto = await Http.GetFromJsonAsync<OrderGetByIdDto>($"Api/Order/{Id}");
+    }
+}

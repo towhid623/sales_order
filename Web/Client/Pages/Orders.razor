@@ -1,0 +1,66 @@
+﻿@page "/orders"
+@using Web.Shared
+@using Web.Shared.Dtos;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Orders</PageTitle>
+
+<h1>Orders</h1>
+
+<a href="orders/add">
+    <button class="btn btn-primary" type="button">Add Order</button>
+</a>
+@if (_orderGetAllDtos == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-bordered table-hover mt-5">
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>State</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in _orderGetAllDtos)
+            {
+                <tr>
+                    <td>@order.Customer</td>
+                    <td>@order.State</td>
+                    <td>
+                        <a href="orders/@order.Id">
+                            <button class="btn btn-info" type="button">Details</button>
+                        </a>
+                        <a href="orders/update/@order.Id">
+                            <button class="btn btn-warning" type="button">Update</button>
+                        </a>
+                        <button class="btn btn-danger" type="button" @onclick="(async ()=>await DeleteAsync(order.Id))">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<OrderGetAllDto>? _orderGetAllDtos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _orderGetAllDtos = await Http.GetFromJsonAsync<List<OrderGetAllDto>>("Api/Order");
+    }
+
+    protected async Task DeleteAsync(long id)
+    {
+        var response = await Http.DeleteAsync($"Api/Order/{id}");
+        if (response.IsSuccessStatusCode)
+            NavigationManager.NavigateTo("orders", true);
+        else
+            await JsRuntime.InvokeVoidAsync("alert", await response.Content.ReadAsStringAsync());
+    }
+}

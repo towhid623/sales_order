@@ -1,0 +1,61 @@
+﻿@page "/states"
+@using Web.Shared
+@using Web.Shared.Dtos;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+
+<PageTitle>States</PageTitle>
+
+<h1>States</h1>
+
+<a href="states/add">
+    <button class="btn btn-primary" type="button">Add State</button>
+</a>
+@if (_stateGetAllDtos == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-bordered table-hover mt-5">
+        <thead>
+            <tr>
+                <th>State Name</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var state in _stateGetAllDtos)
+            {
+                <tr>
+                    <td>@state.Name</td>
+                    <td>
+                        <a href="states/update/@state.Id">
+                            <button class="btn btn-info" type="button">Update</button>
+                        </a>
+                        <button class="btn btn-danger" type="button" @onclick="(async ()=>await DeleteAsync(state.Id))">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<StateGetAllDto>? _stateGetAllDtos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _stateGetAllDtos = await Http.GetFromJsonAsync<List<StateGetAllDto>>("Api/State");
+    }
+
+    protected async Task DeleteAsync(long id)
+    {
+        var response = await Http.DeleteAsync($"Api/State/{id}");
+        if (response.IsSuccessStatusCode)
+            NavigationManager.NavigateTo("states", true);
+        else
+            await JsRuntime.InvokeVoidAsync("alert", await response.Content.ReadAsStringAsync());
+    }
+}

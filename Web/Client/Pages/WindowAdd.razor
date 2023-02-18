@@ -1,0 +1,48 @@
+﻿@page "/windows/add"
+@using System.ComponentModel.DataAnnotations;
+@using Web.Shared
+@using Web.Shared.Dtos;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Windows Add</PageTitle>
+
+<h1>Windows Add</h1>
+
+<EditForm EditContext="@editContext" OnSubmit="@SaveDataAsync">
+    <DataAnnotationsValidator />
+
+    <label>Name</label>
+    <InputText class="form-control" @bind-Value="_windowAddDto.Name" />
+    <ValidationMessage For="@(() => _windowAddDto.Name)" />
+    <br />
+    <button class="btn btn-success" type="submit">Submit</button>
+</EditForm>
+
+@code {
+    private WindowAddDto _windowAddDto = new WindowAddDto();
+    private EditContext? editContext;
+    private ValidationMessageStore? messageStore;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(_windowAddDto);
+        messageStore = new(editContext);
+    }
+
+    protected async Task SaveDataAsync(EditContext editContext)
+    {
+        messageStore?.Clear();
+
+        if (editContext?.Validate() == true)
+        {
+            var response = await Http.PostAsJsonAsync<WindowAddDto>("Api/Window", _windowAddDto);
+            if (response.IsSuccessStatusCode)
+                NavigationManager.NavigateTo("windows");
+
+            var exception = await response.Content.ReadAsStringAsync();
+            messageStore?.Add(() => _windowAddDto.Name, exception);
+        }
+    }
+}

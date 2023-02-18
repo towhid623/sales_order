@@ -1,0 +1,167 @@
+﻿@page "/orders/add"
+@using System.ComponentModel.DataAnnotations;
+@using Web.Shared
+@using Web.Shared.Dtos;
+@inject HttpClient Http
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Orders Add</PageTitle>
+
+<h1>Orders Add</h1>
+
+<EditForm Model="@_orderAddDto" OnValidSubmit="@SaveDataAsync">
+    <DataAnnotationsValidator />
+
+    <label>Customer</label>
+    <InputSelect class="form-control" @bind-Value="_orderAddDto.CustomerId">
+        <option value="0">Select a customer</option>
+        @if (_customerGetAllDtos?.Count > 0)
+        {
+            foreach (var customer in _customerGetAllDtos)
+            {
+                <option value="@customer.Id">@customer.Name</option>
+            }
+        }
+    </InputSelect>
+    <ValidationMessage For="@(() => _orderAddDto.CustomerId)" />
+    <br />
+
+    <label>State</label>
+    <InputSelect class="form-control" @bind-Value="_orderAddDto.StateId">
+        <option value="0">Select a state</option>
+        @if (_stateGetAllDtos?.Count > 0)
+        {
+            foreach (var state in _stateGetAllDtos)
+            {
+                <option value="@state.Id">@state.Name</option>
+            }
+        }
+    </InputSelect>
+    <ValidationMessage For="@(() => _orderAddDto.StateId)" />
+    <br />
+
+
+    <button class="btn btn-outline-info btn-sm" type="button" @onclick="(async ()=> AddWindow())">Add Window</button>
+    <br />
+    @if (_orderAddDto.Windows?.Count > 0)
+    {
+        foreach (var orderWindow in _orderAddDto.Windows)
+        {
+            <div class="p-2 m-2">
+                <table>
+                    <tr>
+                        <td>
+                            <label>Window</label>
+                            <InputSelect class="form-control" @bind-Value="orderWindow.WindowId">
+                                <option value="0">Select a window</option>
+                                @if (_windowGetAllDtos?.Count > 0)
+                                {
+                                    foreach (var window in _windowGetAllDtos)
+                                    {
+                                        <option value="@window.Id">@window.Name</option>
+                                    }
+                                }
+                            </InputSelect>
+                        </td>
+                        <td>
+                            <label>Quantity</label>
+                            <InputNumber class="form-control" @bind-Value="orderWindow.Quantity" />
+                        </td>
+                        <td>
+                            <br />
+                            <button class="btn btn-outline-danger btn-sm" type="button" @onclick="(()=> DeleteWindow(orderWindow))">X</button>
+                        </td>
+                    </tr>
+                </table>
+
+                <button class="btn btn-outline-info btn-sm" type="button" @onclick="(async ()=> AddSubElement(orderWindow))">Add Sub Element</button>
+                @if (orderWindow.SubElements?.Count > 0)
+                {
+                    foreach (var subElement in orderWindow.SubElements)
+                    {
+                        <table>
+                            <tr>
+                                <td>
+                                    <label>Type</label>
+                                    <InputText class="form-control-sm" @bind-Value="subElement.Type" />
+                                </td>
+                                <td>
+                                    <label>Element</label>
+                                    <InputNumber class="form-control-sm" @bind-Value="subElement.Element" />
+                                </td>
+                                <td>
+                                    <label>Height</label>
+                                    <InputNumber class="form-control-sm" @bind-Value="subElement.Height" />
+                                </td>
+                                <td>
+                                    <label>Width</label>
+                                    <InputNumber class="form-control-sm" @bind-Value="subElement.Width" />
+                                </td>
+                                <td>
+                            <br />
+                                    <button class="btn btn-outline-danger btn-sm" type="button" @onclick="(()=> DeleteSubElement(orderWindow, subElement))">X</button>
+                                </td>
+                            </tr>
+                        </table>
+                    }
+                }
+            </div>
+        }
+    }
+    <br />
+    <button class="btn btn-success" type="submit">Submit</button>
+</EditForm>
+
+@code {
+    private OrderAddDto _orderAddDto = new OrderAddDto
+        {
+            Windows = new List<OrderAddWindowDto>()
+        };
+    private List<CustomerGetAllDto>? _customerGetAllDtos;
+    private List<StateGetAllDto>? _stateGetAllDtos;
+    private List<WindowGetAllDto>? _windowGetAllDtos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _customerGetAllDtos = await Http.GetFromJsonAsync<List<CustomerGetAllDto>>("Api/Customer");
+        _stateGetAllDtos = await Http.GetFromJsonAsync<List<StateGetAllDto>>("Api/State");
+        _windowGetAllDtos = await Http.GetFromJsonAsync<List<WindowGetAllDto>>("Api/Window");
+    }
+
+    protected async Task SaveDataAsync(EditContext editContext)
+    {
+        var response = await Http.PostAsJsonAsync<OrderAddDto>("Api/Order", _orderAddDto);
+        if (response.IsSuccessStatusCode)
+            NavigationManager.NavigateTo("orders");
+        else
+        {
+            var exception = await response.Content.ReadAsStringAsync();
+            await JsRuntime.InvokeVoidAsync("alert", exception);
+        }
+    }
+
+    protected void AddWindow()
+    {
+        _orderAddDto.Windows?.Add(new OrderAddWindowDto
+            {
+                SubElements = new List<OrderAddWindowSubElementDto>()
+            });
+    }
+
+    protected void DeleteWindow(OrderAddWindowDto orderAddWindowDto)
+    {
+        _orderAddDto.Windows?.Remove(orderAddWindowDto);
+    }
+
+    protected void AddSubElement(OrderAddWindowDto orderAddWindowDto)
+    {
+        orderAddWindowDto.SubElements?.Add(new OrderAddWindowSubElementDto());
+    }
+
+    protected void DeleteSubElement(OrderAddWindowDto orderAddWindowDto, OrderAddWindowSubElementDto orderAddWindowSubElementDto)
+    {
+        orderAddWindowDto.SubElements?.Remove(orderAddWindowSubElementDto);
+    }
+}

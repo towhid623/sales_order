@@ -1,0 +1,61 @@
+﻿@page "/states/update/{Id:long}"
+@using System.ComponentModel.DataAnnotations;
+@using Web.Shared
+@using Web.Shared.Dtos;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>States Update</PageTitle>
+
+<h1>States Update</h1>
+
+<EditForm EditContext="@editContext" OnSubmit="@SaveDataAsync">
+    <DataAnnotationsValidator />
+
+    <label>Name</label>
+    <InputText class="form-control" @bind-Value="_stateUpdateDto.Name" />
+    <ValidationMessage For="@(() => _stateUpdateDto.Name)" />
+    <br />
+    <button class="btn btn-success" type="submit">Submit</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public long Id { get; set; }
+    private StateUpdateDto _stateUpdateDto = new StateUpdateDto();
+    private EditContext? editContext;
+    private ValidationMessageStore? messageStore;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Id = Id;
+        var stateGetByIdDto = await Http.GetFromJsonAsync<StateGetByIdDto>($"Api/State/{Id}");
+        if (stateGetByIdDto!=null)
+        {
+            _stateUpdateDto.Id = stateGetByIdDto.Id;
+            _stateUpdateDto.Name = stateGetByIdDto.Name;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(_stateUpdateDto);
+        messageStore = new(editContext);
+    }
+
+    protected async Task SaveDataAsync(EditContext editContext)
+    {
+        messageStore?.Clear();
+
+        if (editContext?.Validate() == true)
+        {
+            var response = await Http.PutAsJsonAsync<StateUpdateDto>("Api/State", _stateUpdateDto);
+            if (response.IsSuccessStatusCode)
+                NavigationManager.NavigateTo("states");
+
+            var exception = await response.Content.ReadAsStringAsync();
+            messageStore?.Add(() => _stateUpdateDto.Name, exception);
+        }
+    }
+}

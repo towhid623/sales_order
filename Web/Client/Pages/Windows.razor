@@ -1,0 +1,61 @@
+﻿@page "/windows"
+@using Web.Shared
+@using Web.Shared.Dtos;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Windows</PageTitle>
+
+<h1>Windows</h1>
+
+<a href="windows/add">
+    <button class="btn btn-primary" type="button">Add Window</button>
+</a>
+@if (_windowGetAllDtos == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-bordered table-hover mt-5">
+        <thead>
+            <tr>
+                <th>Window Name</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var window in _windowGetAllDtos)
+            {
+                <tr>
+                    <td>@window.Name</td>
+                    <td>
+                        <a href="windows/update/@window.Id">
+                            <button class="btn btn-info" type="button">Update</button>
+                        </a>
+                        <button class="btn btn-danger" type="button" @onclick="(async ()=>await DeleteAsync(window.Id))">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<WindowGetAllDto>? _windowGetAllDtos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _windowGetAllDtos = await Http.GetFromJsonAsync<List<WindowGetAllDto>>("Api/Window");
+    }
+
+    protected async Task DeleteAsync(long id)
+    {
+        var response = await Http.DeleteAsync($"Api/Window/{id}");
+        if (response.IsSuccessStatusCode)
+            NavigationManager.NavigateTo("windows", true);
+        else
+            await JsRuntime.InvokeVoidAsync("alert", await response.Content.ReadAsStringAsync());
+    }
+}

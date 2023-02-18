@@ -1,0 +1,48 @@
+﻿@page "/customers/add"
+@using System.ComponentModel.DataAnnotations;
+@using Web.Shared
+@using Web.Shared.Dtos;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Customers Add</PageTitle>
+
+<h1>Customers Add</h1>
+
+<EditForm EditContext="@editContext" OnSubmit="@SaveDataAsync">
+    <DataAnnotationsValidator />
+
+    <label>Name</label>
+    <InputText class="form-control" @bind-Value="_customerAddDto.Name" />
+    <ValidationMessage For="@(() => _customerAddDto.Name)" />
+    <br />
+    <button class="btn btn-success" type="submit">Submit</button>
+</EditForm>
+
+@code {
+    private CustomerAddDto _customerAddDto = new CustomerAddDto();
+    private EditContext? editContext;
+    private ValidationMessageStore? messageStore;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(_customerAddDto);
+        messageStore = new(editContext);
+    }
+
+    protected async Task SaveDataAsync(EditContext editContext)
+    {
+        messageStore?.Clear();
+
+        if (editContext?.Validate() == true)
+        {
+            var response = await Http.PostAsJsonAsync<CustomerAddDto>("Api/Customer", _customerAddDto);
+            if (response.IsSuccessStatusCode)
+                NavigationManager.NavigateTo("customers");
+
+            var exception = await response.Content.ReadAsStringAsync();
+            messageStore?.Add(() => _customerAddDto.Name, exception);
+        }
+    }
+}

@@ -1,0 +1,61 @@
+﻿@page "/windows/update/{Id:long}"
+@using System.ComponentModel.DataAnnotations;
+@using Web.Shared
+@using Web.Shared.Dtos;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Windows Update</PageTitle>
+
+<h1>Windows Update</h1>
+
+<EditForm EditContext="@editContext" OnSubmit="@SaveDataAsync">
+    <DataAnnotationsValidator />
+
+    <label>Name</label>
+    <InputText class="form-control" @bind-Value="_windowUpdateDto.Name" />
+    <ValidationMessage For="@(() => _windowUpdateDto.Name)" />
+    <br />
+    <button class="btn btn-success" type="submit">Submit</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public long Id { get; set; }
+    private WindowUpdateDto _windowUpdateDto = new WindowUpdateDto();
+    private EditContext? editContext;
+    private ValidationMessageStore? messageStore;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Id = Id;
+        var windowGetByIdDto = await Http.GetFromJsonAsync<WindowGetByIdDto>($"Api/Window/{Id}");
+        if (windowGetByIdDto!=null)
+        {
+            _windowUpdateDto.Id = windowGetByIdDto.Id;
+            _windowUpdateDto.Name = windowGetByIdDto.Name;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(_windowUpdateDto);
+        messageStore = new(editContext);
+    }
+
+    protected async Task SaveDataAsync(EditContext editContext)
+    {
+        messageStore?.Clear();
+
+        if (editContext?.Validate() == true)
+        {
+            var response = await Http.PutAsJsonAsync<WindowUpdateDto>("Api/Window", _windowUpdateDto);
+            if (response.IsSuccessStatusCode)
+                NavigationManager.NavigateTo("windows");
+
+            var exception = await response.Content.ReadAsStringAsync();
+            messageStore?.Add(() => _windowUpdateDto.Name, exception);
+        }
+    }
+}

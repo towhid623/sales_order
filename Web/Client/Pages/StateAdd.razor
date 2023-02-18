@@ -1,0 +1,48 @@
+﻿@page "/states/add"
+@using System.ComponentModel.DataAnnotations;
+@using Web.Shared
+@using Web.Shared.Dtos;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>States Add</PageTitle>
+
+<h1>States Add</h1>
+
+<EditForm EditContext="@editContext" OnSubmit="@SaveDataAsync">
+    <DataAnnotationsValidator />
+
+    <label>Name</label>
+    <InputText class="form-control" @bind-Value="_stateAddDto.Name" />
+    <ValidationMessage For="@(() => _stateAddDto.Name)" />
+    <br />
+    <button class="btn btn-success" type="submit">Submit</button>
+</EditForm>
+
+@code {
+    private StateAddDto _stateAddDto = new StateAddDto();
+    private EditContext? editContext;
+    private ValidationMessageStore? messageStore;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(_stateAddDto);
+        messageStore = new(editContext);
+    }
+
+    protected async Task SaveDataAsync(EditContext editContext)
+    {
+        messageStore?.Clear();
+
+        if (editContext?.Validate() == true)
+        {
+            var response = await Http.PostAsJsonAsync<StateAddDto>("Api/State", _stateAddDto);
+            if (response.IsSuccessStatusCode)
+                NavigationManager.NavigateTo("states");
+
+            var exception = await response.Content.ReadAsStringAsync();
+            messageStore?.Add(() => _stateAddDto.Name, exception);
+        }
+    }
+}

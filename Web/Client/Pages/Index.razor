@@ -1,0 +1,17 @@
+﻿@page "/"
+@inject HttpClient Http
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello!</h1>
+
+Welcome to your sales order app.
+
+@*<SurveyPrompt Title="How is Blazor working for you?" />*@
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await Http.PostAsync("Api/SampleData", null);
+    }
+}
